@@ -11,13 +11,15 @@ from datetime import datetime
 from ChatGPT_HKBU import HKBU_ChatGPT
 
 def load_firebase_creds():
-    if "FIREBASE_CREDENTIALS" in os.environ:
-        creds = base64.b64decode(os.environ["FIREBASE_CREDENTIALS"]).decode()
-        return json.loads(creds)
-    else:
-        raise ValueError("Firebase credentials not found in environment")
+    try:
+        print(os.environ["FIREBASE_CREDENTIALS"][:5])
+        creds_json = base64.b64decode(os.environ["FIREBASE_CREDENTIALS"])
+        print(creds_json)
+        return json.loads(creds_json)
+    except Exception as e:
+        raise ValueError(f"Invalid Firebase credentials: {str(e)}")
 
-load_dotenv()
+
 cred = credentials.Certificate(load_firebase_creds())
 firebase_admin.initialize_app(cred)
 db = firestore.client()
