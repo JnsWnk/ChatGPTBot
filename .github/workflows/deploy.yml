@@ -23,8 +23,6 @@ jobs:
             C_ACCESS_TOKEN=${{ secrets.C_ACCESS_TOKEN }}
             T_LINK=${{ secrets.T_LINK }}
             FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}
-          secrets: |
-            FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}
           flags: |
             --cpu=1
             --memory=512Mi
