@@ -1,0 +1,5 @@
+telegram
+configparser
+redis
+requests
+firebase-admin
