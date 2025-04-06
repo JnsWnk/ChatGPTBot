@@ -7,20 +7,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Authenticate with required scopes
+      # Simplified authentication (use either credentials_json OR workload identity)
       - uses: google-github-actions/auth@v1
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-          token_format: "access_token"
-          workload_identity_provider: "projects/PROJECT_NUMBER/locations/global/workloadIdentityProviders/github"
-          service_account: "github-actions-bot@corded-observer-456019-u8.iam.gserviceaccount.com"
+          credentials_json: ${{ secrets.GCP_SA_KEY }}  # Remove workload_identity_provider if using this
 
-      # Explicitly set project
-      - name: Set up Cloud SDK
-        run: |
-          gcloud config set project corded-observer-456019-u8
-          gcloud config set run/region asia-east2
-
+      # Set project explicitly
+      - name: Set project
+        run: gcloud config set project corded-observer-456019-u8
+        
       # Build and deploy
       - uses: google-github-actions/deploy-cloudrun@v1
         with:
