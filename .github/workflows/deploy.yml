@@ -22,7 +22,11 @@ jobs:
           service: "telegram-chatbot" 
           region: "asia-east2"        
           source: "."
-          env_vars: "T_ACCESS_TOKEN=${{ secrets.T_ACCESS_TOKEN }},C_ACCESS_TOKEN=${{ secrets.C_CHATGPT_TOKEN }},T_LINK=${{ secrets.T_LINK }},FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}"
+          env_vars: |
+            T_ACCESS_TOKEN=${{ secrets.T_ACCESS_TOKEN }}
+            C_ACCESS_TOKEN=${{ secrets.C_CHATGPT_TOKEN }}
+            T_LINK=${{ secrets.T_LINK }}
+            FIREBASE_CREDENTIALS=${{ env.FIREBASE_CREDENTIALS }}
           flags: |
             --set-env-vars=^:^T_ACCESS_TOKEN=${{ secrets.T_ACCESS_TOKEN }}:C_ACCESS_TOKEN=${{ secrets.C_ACCESS_TOKEN }}:T_LINK=${{ secrets.T_LINK }}:FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}
             --execution-environment=gen2
