@@ -1,0 +1,13 @@
+version: '3'
+services:
+  chatbot:
+    build: .
+    container_name: chatbot
+    environment:
+      - T_ACCESS_TOKEN=${T_ACCESS_TOKEN}
+      - C_ACCESS_TOKEN=${C_ACCESS_TOKEN}
+      - T_LINK=${T_LINK}
+      - FIREBASE_CREDENTIALS=${FIREBASE_CREDENTIALS}
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs 
