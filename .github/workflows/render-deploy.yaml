@@ -1,19 +1,16 @@
-name: Render Deployment
-on: [push]
+name: Trigger Render Deployment
+on:
+  push:
+    branches:
+      - main
 jobs:
-  deploy:
+  main:
+    name: Deploy to Render
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      # Install Render CLI
-      - name: Install Render CLI
-        run: |
-          curl -fsSL https://cli.render.com/install.sh | bash
-          echo "$HOME/.render/bin" >> $GITHUB_PATH  # Add to PATH
-
-      # Deploy to Render
-      - name: Deploy
-        run: render deploy --service telegram-bot --wait
-        env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      - name: Trigger deployment
+        uses: sws2apps/render-deployment@main #consider using pin for dependabot auto update
+        with:
+          serviceId: ${{ secrets.RENDER_SERVICE_ID }}
+          apiKey: ${{ secrets.RENDER_API_KEY }}
+          multipleDeployment: false #optional, default true
