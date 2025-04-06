@@ -1,0 +1,12 @@
+# .github/workflows/render-deploy.yaml
+name: Render Deployment
+on: [push]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: curl -fsSL https://cli.render.com/install.sh | bash
+      - run: render deploy --service telegram-bot --wait
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}

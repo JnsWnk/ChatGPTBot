@@ -1,0 +1,19 @@
+# Infrastructure as Code (IaC)
+services:
+  - type: web
+    name: ChatGPTBot
+    runtime: docker
+    dockerfile: Dockerfile
+    envVars:
+      - key: T_ACCESS_TOKEN
+        sync: false  
+      - key: C_ACCESS_TOKEN
+        sync: false
+      - key: T_LINK
+        sync: false
+      - key: FIREBASE_CREDENTIALS
+        sync: false
+    autoDeploy: true
+    scaling:
+      minInstances: 1
+      maxInstances: 3
