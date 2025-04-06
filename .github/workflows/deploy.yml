@@ -25,3 +25,9 @@ jobs:
             FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}
           secrets: |
             FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}:latest
+          flags: |
+            --logging=CLOUD_LOGGING_ONLY
+            --cpu=1
+            --memory=512Mi
+            --min-instances=1
+            --timeout=300s
