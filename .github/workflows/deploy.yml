@@ -7,10 +7,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Authenticate with Google Cloud
+      # Authenticate with required scopes
       - uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
+          token_format: "access_token"
+          workload_identity_provider: "projects/PROJECT_NUMBER/locations/global/workloadIdentityProviders/github"
+          service_account: "github-actions-bot@corded-observer-456019-u8.iam.gserviceaccount.com"
+
+      # Explicitly set project
+      - name: Set up Cloud SDK
+        run: |
+          gcloud config set project corded-observer-456019-u8
+          gcloud config set run/region asia-east2
 
       # Build and deploy
       - uses: google-github-actions/deploy-cloudrun@v1
@@ -23,9 +32,4 @@ jobs:
             C_ACCESS_TOKEN=${{ secrets.C_ACCESS_TOKEN }}
             T_LINK=${{ secrets.T_LINK }}
             FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}
-          flags: |
-            --execution-environment=gen2
-            --cpu=1
-            --memory=512Mi
-            --min-instances=1
-            --timeout=300s
+          flags: "--execution-environment=gen2 --cpu=1 --memory=512Mi --min-instances=1 --timeout=300s"
