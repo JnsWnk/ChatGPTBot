@@ -12,9 +12,12 @@ from ChatGPT_HKBU import HKBU_ChatGPT
 
 def load_firebase_creds():
     try:
-        print(os.environ["FIREBASE_CREDENTIALS"][:5])
+        print("Available env vars:", list(os.environ.keys()))
+    
+        if "FIREBASE_CREDENTIALS" not in os.environ:
+            raise ValueError("FIREBASE_CREDENTIALS not found in environment. Available vars: " + ", ".join(os.environ.keys()))
+    
         creds_json = base64.b64decode(os.environ["FIREBASE_CREDENTIALS"])
-        print(creds_json)
         return json.loads(creds_json)
     except Exception as e:
         raise ValueError(f"Invalid Firebase credentials: {str(e)}")

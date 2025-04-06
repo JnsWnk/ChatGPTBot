@@ -15,16 +15,12 @@ jobs:
       # Set project explicitly
       - name: Set project
         run: gcloud config set project corded-observer-456019-u8
-        
+
       # Build and deploy
       - uses: google-github-actions/deploy-cloudrun@v1
         with:
           service: "telegram-chatbot" 
           region: "asia-east2"        
           source: "."
-          env_vars: |
-            T_ACCESS_TOKEN=${{ secrets.T_ACCESS_TOKEN }}
-            C_ACCESS_TOKEN=${{ secrets.C_ACCESS_TOKEN }}
-            T_LINK=${{ secrets.T_LINK }}
-            FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}
+          env_vars: "T_ACCESS_TOKEN=${{ secrets.T_ACCESS_TOKEN }},C_ACCESS_TOKEN=${{ secrets.C_CHATGPT_TOKEN }},T_LINK=${{ secrets.T_LINK }},FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}"
           flags: "--execution-environment=gen2 --cpu=1 --memory=512Mi --min-instances=1 --timeout=300s"
