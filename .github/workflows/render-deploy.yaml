@@ -1,16 +1,18 @@
+name: Trigger Render Build
 on:
-  pull_request:
   push:
     branches: [main]
 
 jobs:
-  ci:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Deploy
-        if: github.ref == 'refs/heads/main'
-        env:
-          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Trigger Render Webhook
         run: |
-          curl "$deploy_url"
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"ref":"${{ github.ref }}"}' \
+            "${{ secrets.RENDER_WEBHOOK_URL }}"
