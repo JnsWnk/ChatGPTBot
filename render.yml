@@ -1,6 +1,6 @@
 # Infrastructure as Code (IaC)
 services:
-  - type: web
+  - type: worker
     name: ChatGPTBot
     runtime: docker
     dockerfile: Dockerfile
@@ -23,4 +23,6 @@ services:
       maxInstances: 3
       cpuThreshold: 60
     healthCheckPath: /health
+    restartPolicy: always
+    maxRestarts: 10
     port: 10000

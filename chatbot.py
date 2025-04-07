@@ -1,5 +1,6 @@
 import base64
 import json
+import time
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, 
                          CallbackContext, CallbackQueryHandler)
@@ -12,6 +13,7 @@ from datetime import datetime
 from ChatGPT_HKBU import HKBU_ChatGPT
 from google.cloud.firestore import FieldFilter
 import threading
+import signal
 from health_server import run_health_server
 
 def load_firebase_creds():
@@ -28,9 +30,24 @@ cred = credentials.Certificate(load_firebase_creds())
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
+class BotKeeper:
+    def __init__(self, updater):
+        self.updater = updater
+        self.should_restart = True
+        
+    def handle_signal(self, signum, frame):
+        print(f"Received signal {signum}, initiating graceful restart...")
+        self.should_restart = False
+        self.updater.stop()
+        self.updater.is_idle = False
+
 class TelegramChatBot:
     def __init__(self):
         self.updater = Updater(token=os.environ['T_ACCESS_TOKEN'], use_context=True)
+        self.keeper = BotKeeper(self.updater)
+
+        signal.signal(signal.SIGTERM, self.keeper.handle_signal)
+        signal.signal(signal.SIGINT, self.keeper.handle_signal)
         self.dispatcher = self.updater.dispatcher
         self.chatgpt = HKBU_ChatGPT(os.environ['C_ACCESS_TOKEN'])
         
@@ -271,8 +288,22 @@ class TelegramChatBot:
             self._find_matches(update, context)
 
     def run(self):
-        self.updater.start_polling()
-        self.updater.idle()
+        while True:
+            try:
+                print("Starting bot...")
+                self.updater.start_polling()
+                self.updater.idle()
+                
+                if not self.keeper.should_restart:
+                    print("Clean shutdown requested")
+                    break
+                    
+                print("Bot stopped unexpectedly, restarting in 5 seconds...")
+                time.sleep(5)
+                
+            except Exception as e:
+                print(f"Crash detected: {str(e)}")
+                time.sleep(10)
 
 if __name__ == '__main__':
     health_thread = threading.Thread(target=run_health_server)

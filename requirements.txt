@@ -5,3 +5,4 @@ firebase-admin
 python-telegram-bot==13.7
 python-dotenv
 urllib3==1.26.18
+apscheduler==3.9.1
