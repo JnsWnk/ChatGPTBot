@@ -1,4 +1,3 @@
-import configparser
 import requests
 
 class HKBU_ChatGPT():
