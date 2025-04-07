@@ -17,3 +17,10 @@ services:
     scaling:
       minInstances: 1
       maxInstances: 3
+    autoScaling:
+      enabled: true
+      minInstances: 1
+      maxInstances: 3
+      cpuThreshold: 60
+    healthCheckPath: /
+    port: 10000
