@@ -1,4 +1,4 @@
-name: Render Deployment
+name: Force Render Deployment
 on:
   push:
     branches: [main]
@@ -10,31 +10,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Check Render deployment status
-        id: check-render
-        uses: fjogeleit/http-request-action@master
-        with:
-          url: "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}"
-          method: 'GET'
-          customHeaders: '{"Accept": "application/json", "Authorization": "Bearer ${{ secrets.RENDER_API_KEY }}"}'
-        
-      - name: Parse service status
-        id: parse-status
+      - name: Install dependencies
+        run: sudo apt-get install -y jq curl
+
+      - name: Cancel active deployments
+        id: cancel-build
         run: |
-          STATUS=$(echo '${{ steps.check-render.outputs.response }}' | jq -r '.service.status')
-          echo "Current Render status: $STATUS"
-          echo "::set-output name=service_status::$STATUS"
+          # Get active deployments
+          RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys?status=created|building|pending")
           
-      - name: Trigger deployment if not building
-        if: steps.parse-status.outputs.service_status != 'building'
+          # Cancel all active builds
+          echo "$RESPONSE" | jq -r '.[].id' | while read DEPLOY_ID; do
+            echo "Cancelling deployment $DEPLOY_ID"
+            curl -X DELETE \
+              -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+              "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/$DEPLOY_ID"
+          done
+
+      - name: Trigger fresh deployment
         uses: sws2apps/render-deployment@v1.2.0
         with:
           serviceId: ${{ secrets.RENDER_SERVICE_ID }}
           apiKey: ${{ secrets.RENDER_API_KEY }}
           multipleDeployment: false
-          
-      - name: Skip deployment (already building)
-        if: steps.parse-status.outputs.service_status == 'building'
+          waitForDeployment: true
+          deploymentTimeout: 600  # 10 minute timeout
+
+      - name: Verify deployment
         run: |
-          echo "::notice::Skipping deployment - build already in progress"
-          echo "Render service is currently building, will use that deployment"
+          echo "Waiting 30s for deployment to stabilize..."
+          sleep 30
+          curl -sSf https://${{ secrets.RENDER_SERVICE_NAME }}.onrender.com/health
