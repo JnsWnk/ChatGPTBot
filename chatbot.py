@@ -274,20 +274,6 @@ class TelegramChatBot:
         self.updater.start_polling()
         self.updater.idle()
 
-client = monitoring_v3.MetricServiceClient()
-project_name = f"projects/{your-firebase-project-id}"
-
-def record_metric(metric_type, value):
-    series = monitoring_v3.TimeSeries()
-    series.metric.type = f"custom.googleapis.com/{metric_type}"
-    series.resource.type = "global"
-    
-    point = series.points.add()
-    point.value.int64_value = value
-    point.interval.end_time.seconds = int(time.time())
-    
-    client.create_time_series(name=project_name, time_series=[series])
-
 if __name__ == '__main__':
     health_thread = threading.Thread(target=run_health_server)
     health_thread.daemon = True
