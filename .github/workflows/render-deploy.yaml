@@ -1,53 +1,16 @@
-name: Render Deployment
+name: Trigger Render Deployment
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
+    branches:
+      - main
 jobs:
-  deploy:
+  main:
     name: Deploy to Render
     runs-on: ubuntu-latest
-    env:
-      RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
-      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Verify Dockerfile
-        run: |
-          if [ ! -f "Dockerfile" ]; then
-            echo "::error::Dockerfile not found!"
-            exit 1
-          fi
-          echo "Dockerfile verified"
-
-      - name: Trigger Render Deployment
-        id: deploy
-        uses: sws2apps/render-deployment@v1.2.0
+      - name: Trigger deployment
+        uses: sws2apps/render-deployment@main 
         with:
-          serviceId: ${{ env.RENDER_SERVICE_ID }}
-          apiKey: ${{ env.RENDER_API_KEY }}
-          multipleDeployment: false
-          waitForDeployment: true
-          deploymentTimeout: 300
-
-      - name: Verify Deployment
-        run: |
-          DEPLOYMENT_ID=${{ steps.deploy.outputs.deploymentId }}
-          if [ -z "$DEPLOYMENT_ID" ]; then
-            echo "::error::Deployment failed to start"
-            exit 1
-          fi
-          echo "Deployment ID: $DEPLOYMENT_ID"
-
-      - name: Health Check
-        run: |
-          sleep 30 # Wait for service to initialize
-          SERVICE_URL="https://${{ secrets.RENDER_SERVICE_NAME }}.onrender.com"
-          curl -sSf --retry 3 --retry-delay 5 $SERVICE_URL:10000/health || {
-            echo "::error::Health check failed"
-            exit 1
-          }
+          serviceId: ${{ secrets.RENDER_SERVICE_ID }}
+          apiKey: ${{ secrets.RENDER_API_KEY }}
+          multipleDeployment: false 
