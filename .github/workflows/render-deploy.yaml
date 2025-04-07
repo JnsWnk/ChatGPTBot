@@ -1,16 +1,40 @@
-name: Trigger Render Deployment
+name: Render Deployment
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+
 jobs:
-  main:
-    name: Deploy to Render
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger deployment
-        uses: sws2apps/render-deployment@main 
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check Render deployment status
+        id: check-render
+        uses: fjogeleit/http-request-action@master
+        with:
+          url: "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}"
+          method: 'GET'
+          customHeaders: '{"Accept": "application/json", "Authorization": "Bearer ${{ secrets.RENDER_API_KEY }}"}'
+        
+      - name: Parse service status
+        id: parse-status
+        run: |
+          STATUS=$(echo '${{ steps.check-render.outputs.response }}' | jq -r '.service.status')
+          echo "Current Render status: $STATUS"
+          echo "::set-output name=service_status::$STATUS"
+          
+      - name: Trigger deployment if not building
+        if: steps.parse-status.outputs.service_status != 'building'
+        uses: sws2apps/render-deployment@v1.2.0
         with:
           serviceId: ${{ secrets.RENDER_SERVICE_ID }}
           apiKey: ${{ secrets.RENDER_API_KEY }}
-          multipleDeployment: false 
+          multipleDeployment: false
+          
+      - name: Skip deployment (already building)
+        if: steps.parse-status.outputs.service_status == 'building'
+        run: |
+          echo "::notice::Skipping deployment - build already in progress"
+          echo "Render service is currently building, will use that deployment"
