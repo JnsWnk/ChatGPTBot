@@ -65,7 +65,7 @@ class TelegramChatBot:
             CommandHandler("start", self._start),
             CommandHandler("help", self._help),
             CommandHandler("interests", self._set_interests),
-            CommandHandler("match", self._find_matches),
+            CommandHandler("match", self.match),
             MessageHandler(Filters.text & (~Filters.command), self._handle_message),
             CallbackQueryHandler(self._handle_button_click),
             CommandHandler("summarize", self._summarize_text),
@@ -153,18 +153,19 @@ class TelegramChatBot:
             
         self.save_user(update, interests)
         update.message.reply_text(f"✅ Interests saved: {', '.join(interests)}")
-    
+        
     def _handle_message(self, update: Update, context: CallbackContext) -> None:
         self.save_user(update)
         
         # Get or create chat history from context
         chat_history = context.chat_data.get('chat_history', [])
         chat_history.append({"role": "user", "content": update.message.text})
-        user_data = self.get_user(str(update.effective_user.id))
+        current_user = self.get_user(str(update.effective_user.id))
+        matches = self._find_matches(update.effective_user.id)
         
         # Get ChatGPT response with full context
         reply_message = self.chatgpt.submit_with_history(
-            chat_history, user_data)
+            chat_history, current_user, matches)
         
         # Store bot's response in history
         chat_history.append({"role": "assistant", "content": reply_message})
@@ -196,8 +197,36 @@ class TelegramChatBot:
         translation = self.chatgpt.submit(prompt)
         update.message.reply_text(f"🌍 Translation:\n\n{translation}")
         
-    def _find_matches(self, update: Update, context: CallbackContext) -> None:
+    def _find_matches(self, user_id) -> None:
+        # Get current user's data
+        current_user = self.get_user(str(user_id))
+        
+        if not current_user or not current_user.get("interests"):
+            return None
+        
+        # First query: Get users with matching interests
+        matching_users = []
+        for interest in current_user["interests"]:
+            query = db.collection("users").where(
+                "interests", "array_contains", interest
+            ).limit(5)
+            matching_users.extend([doc.to_dict() for doc in query.stream()])
+        
+        # Filter out current user and duplicates
+        unique_matches = {
+            u["user_id"]: u for u in matching_users 
+        }
+        
+        return unique_matches
+            
+    def match(self, update: Update, context: CallbackContext) -> None:
         try:
+            current_user_id = str(update.effective_user.id)
+            current_user = self.get_user(current_user_id)
+            
+            if not current_user or not current_user.get("interests"):
+                return send_message("Please set your interests first with /interests")
+            
             # Get the appropriate message context
             if update.callback_query:
                 bot = update.callback_query
@@ -207,29 +236,9 @@ class TelegramChatBot:
                 send_message = update.message.reply_text
                 chat_id = update.message.chat_id
 
-            # Get current user's data
-            current_user_id = str(update.effective_user.id)
-            current_user = self.get_user(current_user_id)
-            
-            if not current_user or not current_user.get("interests"):
-                return send_message("Please set your interests first with /interests")
-            
-            # First query: Get users with matching interests
-            matching_users = []
-            for interest in current_user["interests"]:
-                query = db.collection("users").where(
-                    "interests", "array_contains", interest
-                ).limit(5)
-                matching_users.extend([doc.to_dict() for doc in query.stream()])
-            
-            # Filter out current user and duplicates
-            unique_matches = {
-                u["user_id"]: u for u in matching_users 
-            }
-            
+            unique_matches = self._find_matches(current_user_id)
             if not unique_matches:
                 return send_message("No matches found yet. Try again later!")
-            
             # Create buttons for matches
             buttons = []
             for user_id, user in list(unique_matches.items())[:5]:  # Limit to 5 matches
@@ -249,7 +258,7 @@ class TelegramChatBot:
                 text="People with similar interests:",
                 reply_markup=InlineKeyboardMarkup(buttons)
             )
-            
+
         except Exception as e:
             logging.error(f"Error in _find_matches: {e}")
             # Fallback error message that works in both contexts
@@ -257,6 +266,7 @@ class TelegramChatBot:
                 chat_id=chat_id,
                 text="⚠️ An error occurred while searching for matches"
             )
+            
 
     def _handle_button_click(self, update: Update, context: CallbackContext) -> None:
         query = update.callback_query
@@ -285,7 +295,7 @@ class TelegramChatBot:
             )
         elif data == "back_to_matches":
             # Re-run the match search when going back
-            self._find_matches(update, context)
+            self.match(update, context)
 
     def run(self):
         while True:
